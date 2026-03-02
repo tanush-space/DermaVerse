@@ -6,7 +6,7 @@ const tokenBlackListModel = require("../models/blackList.model");
 async function register(req, res) {
   const {name,email,password}=req.body;
 
-  const isUserAlreadyExsists=userModel.findOne({
+  const isUserAlreadyExsists=await userModel.findOne({
     email
   })
   if(isUserAlreadyExsists){
@@ -14,6 +14,27 @@ async function register(req, res) {
       message:"User Already Exsists"
     })
   }
+
+  const user = await userModel.create({
+    email,
+    password,
+    name,
+  });
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
+
+   res.cookie("token", token);
+
+  res.status(201).json({
+    user: {
+      _id: user._id,
+      email: user.email,
+      name: user.name,
+    },
+    token: token,
+  });
 }
 
 async function login(req, res) {}
