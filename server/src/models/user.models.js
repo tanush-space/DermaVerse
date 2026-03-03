@@ -51,3 +51,39 @@ userSchema.methods.comparedPassword=async function(password){
 const User=mongoose.model("User", userSchema);
 
 module.exports=User;
+
+// Onboarding schema
+//  // 🔽 ADD THESE FOR ONBOARDING
+
+//     skinType: {
+//       type: String,
+//       enum: ["Balanced", "Dry", "Oily", "Combination", "Sensitive"],
+//     },
+
+//     primaryConcerns: {
+//       type: [String],
+//       default: [],
+//     },
+
+//     sunExposure: {
+//       type: String,
+//       enum: ["Minimal", "Moderate", "High"],
+//     },
+
+//     pollutionExposure: {
+//       type: String,
+//       enum: ["Low", "High"],
+//     },
+
+//     dietPattern: {
+//       type: String,
+//     },
+
+//     rawPhoto: {
+//       type: String, // store image URL (Cloudinary or local path)
+//     },
+
+//     onboardingCompleted: {
+//       type: Boolean,
+//       default: false,
+//     },
