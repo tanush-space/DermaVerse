@@ -1,7 +1,6 @@
-const userModel = require("../models/user.model");
+const userModel = require("../models/user.models");
 const jwt = require("jsonwebtoken");
-const emailService = require("../services/email.service");
-const tokenBlackListModel = require("../models/blackList.model");
+
 
 async function register(req, res) {
   const {name,email,password}=req.body;
@@ -73,7 +72,12 @@ async function login(req, res) {
   });
 }
 
-async function logout(req, res) {}
+async function logout(req, res) {
+   res.clearCookie("token");
+    res.status(200).json({
+        message: "User logged out successfully"
+    });
+}
 
 module.exports = {
   register,
