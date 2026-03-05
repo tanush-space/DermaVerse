@@ -25,7 +25,38 @@ const userSchema = new mongoose.Schema(
       minlength: [6, "Password must be at least 6 characters long"],
       select: false, //this will prevent the password from being returned in any query by default
     },
+    skinType: {
+      type: [String],
+      enum: ["Balanced", "Dry", "Oily", "Combination", "Sensitive"],
+    },
 
+    primaryConcerns: {
+      type: [String],
+      default: [],
+    },
+
+    sunExposure: {
+      type: String,
+      enum: ["Minimal", "Moderate", "High"],
+    },
+
+    pollutionExposure: {
+      type: String,
+      enum: ["Low", "High"],
+    },
+
+    dietPattern: {
+      type: String,
+    },
+
+    rawPhoto: {
+      type: String, // store image URL (Cloudinary or local path)
+    },
+
+    onboardingCompleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true },
 );
