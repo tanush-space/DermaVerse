@@ -5,18 +5,44 @@ import { Activity, ArrowRight, Mail, Lock, User, ShieldCheck } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { authAPI, tokenManager } from '@/lib/api';
 
 export default function SignupPage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: ''
+  });
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.id]: e.target.value
+    });
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    setError('');
+
+    try {
+      const response = await authAPI.register(formData);
+      
+      // Store token and user data
+      tokenManager.setToken(response.token);
+      tokenManager.setUser(response.user);
+      
+      // Navigate to onboarding
       navigate('/onboarding');
-    }, 1500);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -75,11 +101,25 @@ export default function SignupPage() {
           </div>
 
           <form onSubmit={handleSignup} className="space-y-5">
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                {error}
+              </div>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <Input id="name" type="text" placeholder="John Doe" className="pl-10" required />
+                <Input 
+                  id="name" 
+                  type="text" 
+                  placeholder="John Doe" 
+                  className="pl-10" 
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required 
+                />
               </div>
             </div>
 
@@ -87,7 +127,15 @@ export default function SignupPage() {
               <Label htmlFor="email">Email address</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <Input id="email" type="email" placeholder="name@example.com" className="pl-10" required />
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="name@example.com" 
+                  className="pl-10" 
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required 
+                />
               </div>
             </div>
             
@@ -95,7 +143,15 @@ export default function SignupPage() {
               <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <Input id="password" type="password" placeholder="••••••••" className="pl-10" required />
+                <Input 
+                  id="password" 
+                  type="password" 
+                  placeholder="••••••••" 
+                  className="pl-10" 
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  required 
+                />
               </div>
             </div>
 

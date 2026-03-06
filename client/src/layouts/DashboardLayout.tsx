@@ -1,12 +1,13 @@
-import React from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { 
   Sparkles, LayoutDashboard, ScanLine, LineChart, 
-  Bot, Calendar, Settings, Bell, Search, Menu
+  Bot, Calendar, Settings, Bell, Search, Menu, LogOut, User
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 
 const NAV_ITEMS = [
   { path: '/dashboard', label: 'Overview', icon: LayoutDashboard, exact: true },
@@ -19,6 +20,14 @@ const NAV_ITEMS = [
 
 export default function DashboardLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] flex selection:bg-[#D97757]/30 font-sans text-[#2C2A25]">
@@ -102,7 +111,39 @@ export default function DashboardLayout() {
               <Bell className="w-[18px] h-[18px]" />
               <span className="absolute top-3 right-3 w-2 h-2 bg-[#D97757] rounded-full border-2 border-white" />
             </Button>
-            <Button className="bg-[#2C2A25] text-[#FDFBF7] hover:bg-[#1A1916] rounded-full px-8 h-12 hidden sm:flex shadow-lg shadow-[#2C2A25]/10">
+            
+            {/* User Profile Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-3 bg-white border border-[#EDE8E0] rounded-full px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all"
+              >
+                <div className="w-8 h-8 rounded-full bg-[#D97757] flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
+                </div>
+                <span className="hidden sm:block text-sm font-medium text-[#2C2A25]">
+                  {user?.name || 'User'}
+                </span>
+              </button>
+              
+              {showUserMenu && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-[#EDE8E0] rounded-2xl shadow-lg py-2 z-50">
+                  <div className="px-4 py-2 border-b border-[#EDE8E0]">
+                    <p className="text-sm font-medium text-[#2C2A25]">{user?.name}</p>
+                    <p className="text-xs text-[#5A6B5D]">{user?.email}</p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-[#5A6B5D] hover:bg-[#F4EBE6] transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            <Button className="bg-[#2C2A25] text-[#FDFBF7] hover:bg-[#1A1916] rounded-full px-8 h-12 hidden lg:flex shadow-lg shadow-[#2C2A25]/10">
               <ScanLine className="w-4 h-4 mr-2 text-[#D97757]" /> Analyze Now
             </Button>
           </div>

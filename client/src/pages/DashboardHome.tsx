@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { useAuth } from '@/hooks/useAuth';
 
 const data = [
   { name: 'Week 1', score: 65 },
@@ -21,17 +22,41 @@ const data = [
 ];
 
 export default function DashboardHome() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-2 border-[#D97757] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  const firstName = user?.name?.split(' ')[0] || 'User';
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+
   return (
     <div className="space-y-10 pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div>
-          <h1 className="text-5xl font-serif text-[#2C2A25] leading-tight">Good morning, <span className="italic text-[#5A6B5D]">Sarah.</span></h1>
-          <p className="text-[#5A6B5D] mt-2 text-lg font-light">Your skin is looking vibrant today. Let's review your metrics.</p>
+          <h1 className="text-5xl font-serif text-[#2C2A25] leading-tight">
+            Good morning, <span className="italic text-[#5A6B5D]">{firstName}.</span>
+          </h1>
+          <p className="text-[#5A6B5D] mt-2 text-lg font-light">
+            {user?.onboardingCompleted 
+              ? "Your skin is looking vibrant today. Let's review your metrics."
+              : "Welcome! Complete your onboarding to get personalized insights."
+            }
+          </p>
         </div>
         <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-full border border-[#EDE8E0] shadow-sm">
           <Calendar className="w-4 h-4 text-[#D97757]" />
-          <span className="text-sm font-medium text-[#2C2A25] uppercase tracking-widest">Oct 24, 2023</span>
+          <span className="text-sm font-medium text-[#2C2A25] uppercase tracking-widest">{currentDate}</span>
         </div>
       </div>
 

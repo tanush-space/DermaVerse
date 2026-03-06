@@ -6,13 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { authAPI } from '@/lib/api';
 
 const SKIN_TYPES = [
-  { id: 'normal', label: 'Balanced', desc: 'Neither too oily nor too dry' },
-  { id: 'dry', label: 'Dry', desc: 'Flaky, rough, or tight feeling' },
-  { id: 'oily', label: 'Oily', desc: 'Shiny, greasy, prone to breakouts' },
-  { id: 'combination', label: 'Combination', desc: 'Oily T-zone, dry or normal cheeks' },
-  { id: 'sensitive', label: 'Sensitive', desc: 'Prone to redness, itching, or burning' },
+  { id: 'Balanced', label: 'Balanced', desc: 'Neither too oily nor too dry' },
+  { id: 'Dry', label: 'Dry', desc: 'Flaky, rough, or tight feeling' },
+  { id: 'Oily', label: 'Oily', desc: 'Shiny, greasy, prone to breakouts' },
+  { id: 'Combination', label: 'Combination', desc: 'Oily T-zone, dry or normal cheeks' },
+  { id: 'Sensitive', label: 'Sensitive', desc: 'Prone to redness, itching, or burning' },
 ];
 
 const CONCERNS = [
@@ -26,15 +27,58 @@ export default function OnboardingFlow() {
   const [step, setStep] = useState(1);
   const [skinType, setSkinType] = useState<string | null>(null);
   const [concerns, setConcerns] = useState<string[]>([]);
+  const [sunExposure, setSunExposure] = useState('Moderate');
+  const [pollutionExposure, setPollutionExposure] = useState('High');
+  const [dietPattern, setDietPattern] = useState('Balanced / Omnivore');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleNext = () => {
-    if (step < 4) setStep(step + 1);
-    else {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleSunExposureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (value <= 33) setSunExposure('Minimal');
+    else if (value <= 66) setSunExposure('Moderate');
+    else setSunExposure('High');
+  };
+
+  const handlePollutionExposureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    setPollutionExposure(value <= 50 ? 'Low' : 'High');
+  };
+
+  const handleNext = async () => {
+    if (step < 4) {
+      setStep(step + 1);
+    } else {
+      // Submit onboarding data
       setIsUploading(true);
-      setTimeout(() => {
+      setError('');
+
+      try {
+        const formData = new FormData();
+        formData.append('skinType', skinType || '');
+        formData.append('primaryConcerns', JSON.stringify(concerns));
+        formData.append('sunExposure', sunExposure);
+        formData.append('pollutionExposure', pollutionExposure);
+        formData.append('dietPattern', dietPattern);
+        
+        if (selectedFile) {
+          formData.append('rawPhoto', selectedFile);
+        }
+
+        await authAPI.completeOnboarding(formData);
         navigate('/dashboard');
-      }, 2500);
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Failed to complete onboarding. Please try again.');
+        setIsUploading(false);
+      }
     }
   };
 
@@ -185,9 +229,16 @@ export default function OnboardingFlow() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <Label className="text-lg font-serif flex items-center gap-3 text-[#2C2A25]"><Sun className="w-5 h-5 text-[#D97757]" /> Daily Sun Exposure</Label>
-                      <span className="text-sm font-medium text-[#D97757] bg-[#F4EBE6] px-3 py-1 rounded-full">Moderate</span>
+                      <span className="text-sm font-medium text-[#D97757] bg-[#F4EBE6] px-3 py-1 rounded-full">{sunExposure}</span>
                     </div>
-                    <input type="range" className="w-full accent-[#D97757]" min="0" max="100" defaultValue="50" />
+                    <input 
+                      type="range" 
+                      className="w-full accent-[#D97757]" 
+                      min="0" 
+                      max="100" 
+                      defaultValue="50" 
+                      onChange={handleSunExposureChange}
+                    />
                     <div className="flex justify-between text-xs font-medium text-[#5A6B5D] uppercase tracking-widest">
                       <span>Minimal</span>
                       <span>High</span>
@@ -197,9 +248,16 @@ export default function OnboardingFlow() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <Label className="text-lg font-serif flex items-center gap-3 text-[#2C2A25]"><Wind className="w-5 h-5 text-[#5A6B5D]" /> Urban Pollution Exposure</Label>
-                      <span className="text-sm font-medium text-[#5A6B5D] bg-[#E8EFEA] px-3 py-1 rounded-full">High</span>
+                      <span className="text-sm font-medium text-[#5A6B5D] bg-[#E8EFEA] px-3 py-1 rounded-full">{pollutionExposure}</span>
                     </div>
-                    <input type="range" className="w-full accent-[#5A6B5D]" min="0" max="100" defaultValue="75" />
+                    <input 
+                      type="range" 
+                      className="w-full accent-[#5A6B5D]" 
+                      min="0" 
+                      max="100" 
+                      defaultValue="75" 
+                      onChange={handlePollutionExposureChange}
+                    />
                     <div className="flex justify-between text-xs font-medium text-[#5A6B5D] uppercase tracking-widest">
                       <span>Low</span>
                       <span>High</span>
@@ -208,7 +266,11 @@ export default function OnboardingFlow() {
 
                   <div className="space-y-4">
                     <Label className="text-lg font-serif flex items-center gap-3 text-[#2C2A25]"><Coffee className="w-5 h-5 text-[#8B7355]" /> Diet Pattern</Label>
-                    <select className="w-full h-14 rounded-2xl border border-[#EDE8E0] bg-white px-6 text-[#2C2A25] focus:ring-2 focus:ring-[#D97757] outline-none font-medium text-lg appearance-none">
+                    <select 
+                      className="w-full h-14 rounded-2xl border border-[#EDE8E0] bg-white px-6 text-[#2C2A25] focus:ring-2 focus:ring-[#D97757] outline-none font-medium text-lg appearance-none"
+                      value={dietPattern}
+                      onChange={(e) => setDietPattern(e.target.value)}
+                    >
                       <option>Balanced / Omnivore</option>
                       <option>Plant-based / Vegan</option>
                       <option>High Dairy / Sugar</option>
@@ -233,16 +295,38 @@ export default function OnboardingFlow() {
                   <p className="text-[#5A6B5D] text-lg font-light">Upload a clear, well-lit photo of your face or concern area.</p>
                 </div>
                 
+                {error && (
+                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                    {error}
+                  </div>
+                )}
+                
                 <div className="border border-[#EDE8E0] rounded-[3rem] bg-white p-16 flex flex-col items-center justify-center text-center transition-all duration-500 hover:border-[#D97757] hover:shadow-xl cursor-pointer group relative overflow-hidden">
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="file-upload"
+                  />
                   <div className="absolute inset-0 bg-noise opacity-20 pointer-events-none" />
                   <div className="w-24 h-24 rounded-full bg-[#FDFBF7] border border-[#EDE8E0] flex items-center justify-center mb-8 group-hover:bg-[#F4EBE6] group-hover:border-[#D97757]/30 transition-colors relative z-10">
                     <UploadCloud className="w-10 h-10 text-[#5A6B5D] group-hover:text-[#D97757] transition-colors" />
                   </div>
-                  <h3 className="text-2xl font-serif text-[#2C2A25] mb-3 relative z-10">Click or drag image here</h3>
+                  <h3 className="text-2xl font-serif text-[#2C2A25] mb-3 relative z-10">
+                    {selectedFile ? selectedFile.name : "Click or drag image here"}
+                  </h3>
                   <p className="text-[#5A6B5D] max-w-sm mx-auto mb-8 font-light relative z-10">
-                    Ensure good lighting, no makeup, and a neutral expression for best AI accuracy.
+                    {selectedFile ? "File selected! Click Continue to proceed." : "Ensure good lighting, no makeup, and a neutral expression for best AI accuracy."}
                   </p>
-                  <Button variant="outline" className="rounded-full px-10 h-14 text-base relative z-10">Browse Files</Button>
+                  <Button 
+                    variant="outline" 
+                    className="rounded-full px-10 h-14 text-base relative z-10" 
+                    type="button"
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                  >
+                    {selectedFile ? "Change File" : "Browse Files"}
+                  </Button>
                 </div>
               </motion.div>
             )}
