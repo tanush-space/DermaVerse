@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema(
       select: false, //this will prevent the password from being returned in any query by default
     },
     skinType: {
-      type: [String],
+      type: String,
       enum: ["Balanced", "Dry", "Oily", "Combination", "Sensitive"],
     },
 
@@ -61,14 +61,13 @@ const userSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-userSchema.pre("save",async function(next){
+userSchema.pre("save", async function(){
   if(!this.isModified("password")){
-    return next();
+    return;
   }
-//hashing the password before saving the user document to the database
-const hashedPassword=await bcrypt.hash(this.password,10);
-this.password=hashedPassword;
-next();
+  //hashing the password before saving the user document to the database
+  const hashedPassword = await bcrypt.hash(this.password, 10);
+  this.password = hashedPassword;
 })
 
 userSchema.methods.comparedPassword=async function(password){
@@ -83,38 +82,3 @@ const User=mongoose.model("User", userSchema);
 
 module.exports=User;
 
-// Onboarding schema
-//  // 🔽 ADD THESE FOR ONBOARDING
-
-//     skinType: {
-//       type: String,
-//       enum: ["Balanced", "Dry", "Oily", "Combination", "Sensitive"],
-//     },
-
-//     primaryConcerns: {
-//       type: [String],
-//       default: [],
-//     },
-
-//     sunExposure: {
-//       type: String,
-//       enum: ["Minimal", "Moderate", "High"],
-//     },
-
-//     pollutionExposure: {
-//       type: String,
-//       enum: ["Low", "High"],
-//     },
-
-//     dietPattern: {
-//       type: String,
-//     },
-
-//     rawPhoto: {
-//       type: String, // store image URL (Cloudinary or local path)
-//     },
-
-//     onboardingCompleted: {
-//       type: Boolean,
-//       default: false,
-//     },
