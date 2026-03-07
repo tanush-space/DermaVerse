@@ -1,70 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Activity, ArrowRight, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { authAPI, tokenManager } from '@/lib/api';
+
+const GooglyEye = ({ mouseX, mouseY, isClosed }: { mouseX: number, mouseY: number, isClosed: boolean }) => {
+  const eyeRef = useRef<HTMLDivElement>(null);
+  const [pupilPos, setPupilPos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (isClosed || !eyeRef.current) {
+      setPupilPos({ x: 0, y: 0 });
+      return;
+    }
+    
+    const rect = eyeRef.current.getBoundingClientRect();
+    const eyeCenterX = rect.left + rect.width / 2;
+    const eyeCenterY = rect.top + rect.height / 2;
+    
+    const angle = Math.atan2(mouseY - eyeCenterY, mouseX - eyeCenterX);
+    // Calculate distance, capping it so the pupil stays inside the eye
+    const maxDistance = rect.width / 2 - 10; // 10 is half the pupil width
+    const distance = Math.min(
+      Math.hypot(mouseX - eyeCenterX, mouseY - eyeCenterY) / 15,
+      maxDistance
+    );
+    
+    setPupilPos({
+      x: Math.cos(angle) * distance,
+      y: Math.sin(angle) * distance,
+    });
+  }, [mouseX, mouseY, isClosed]);
+
+  return (
+    <div ref={eyeRef} className="relative w-16 h-16 rounded-full bg-[#F4EBE6] border-2 border-[#E8D5C4] flex items-center justify-center overflow-hidden shadow-lg">
+      {isClosed ? (
+        <div className="w-full h-1.5 bg-[#D97757] absolute top-1/2 -translate-y-1/2" />
+      ) : (
+        <motion.div 
+          animate={{ x: pupilPos.x, y: pupilPos.y }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className="w-6 h-6 bg-[#D97757] rounded-full"
+        />
+      )}
+    </div>
+  );
+};
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.id]: e.target.value
-    });
-  };
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await authAPI.login(formData);
-      
-      // Store token and user data
-      tokenManager.setToken(response.token);
-      tokenManager.setUser(response.user);
-      
-      // Check onboarding status
-      try {
-        const onboardingStatus = await authAPI.getOnboardingStatus();
-        if (!onboardingStatus.onboardingCompleted) {
-          navigate('/onboarding');
-        } else {
-          navigate('/dashboard');
-        }
-      } catch {
-        // If onboarding check fails, go to dashboard
-        navigate('/dashboard');
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
-    } finally {
+    setTimeout(() => {
       setIsLoading(false);
-    }
+      navigate('/dashboard');
+    }, 1500);
   };
 
   return (
     <div className="min-h-screen flex bg-white selection:bg-orange-500/30">
       {/* Left Side - Illustration */}
-      <div className="hidden lg:flex w-1/2 bg-slate-900 relative overflow-hidden items-center justify-center p-12">
+      <div className="hidden lg:flex w-1/2 bg-[#0B1121] relative overflow-hidden items-center justify-center p-12">
+        {/* Enhanced Background Elements */}
         <div className="absolute inset-0 neural-mesh opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/50 via-transparent to-slate-900/80 z-10" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0B1121]/80 via-transparent to-[#0B1121]/90 z-10" />
         
         <div className="relative z-20 max-w-lg">
-          <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-xl flex items-center justify-center mb-8 border border-white/20">
-            <Activity className="w-8 h-8 text-orange-400" />
+          {/* Googly Eyes Character */}
+          <div className="flex gap-4 mb-8">
+            <GooglyEye mouseX={mousePos.x} mouseY={mousePos.y} isClosed={isPasswordFocused && !showPassword} />
+            <GooglyEye mouseX={mousePos.x} mouseY={mousePos.y} isClosed={isPasswordFocused && !showPassword} />
           </div>
           <h2 className="text-4xl font-bold text-white mb-6 leading-tight">
             Your skin's digital twin, <br />
@@ -77,8 +100,13 @@ export default function LoginPage() {
           <div className="mt-12 flex items-center gap-4">
             <div className="flex -space-x-3">
               {[1,2,3,4].map(i => (
-                <div key={i} className={`w-10 h-10 rounded-full border-2 border-slate-900 bg-slate-${i*100} flex items-center justify-center text-xs font-bold text-slate-600`}>
-                  U{i}
+                <div key={i} className="w-10 h-10 rounded-full border-2 border-[#0B1121] bg-slate-200 overflow-hidden">
+                  <img 
+                    src={`https://picsum.photos/seed/skincareuser${i}/100/100`} 
+                    alt={`User ${i}`} 
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               ))}
             </div>
@@ -108,23 +136,15 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
-            {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-                {error}
-              </div>
-            )}
-            
             <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
+              <Label htmlFor="email" className="text-slate-700">Email address</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <Input 
                   id="email" 
                   type="email" 
                   placeholder="name@example.com" 
-                  className="pl-10" 
-                  value={formData.email}
-                  onChange={handleInputChange}
+                  className="pl-10 text-slate-900 placeholder:text-slate-400 bg-white border-slate-300 focus-visible:ring-orange-500" 
                   required 
                 />
               </div>
@@ -132,7 +152,7 @@ export default function LoginPage() {
             
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-slate-700">Password</Label>
                 <a href="#" className="text-sm font-medium text-orange-600 hover:text-orange-500">Forgot password?</a>
               </div>
               <div className="relative">
@@ -141,9 +161,9 @@ export default function LoginPage() {
                   id="password" 
                   type={showPassword ? "text" : "password"} 
                   placeholder="••••••••" 
-                  className="pl-10 pr-10" 
-                  value={formData.password}
-                  onChange={handleInputChange}
+                  className="pl-10 pr-10 text-slate-900 placeholder:text-slate-400 bg-white border-slate-300 focus-visible:ring-orange-500" 
+                  onFocus={() => setIsPasswordFocused(true)}
+                  onBlur={() => setIsPasswordFocused(false)}
                   required 
                 />
                 <button 
@@ -161,7 +181,7 @@ export default function LoginPage() {
               <Label htmlFor="remember" className="font-normal text-slate-600 cursor-pointer">Remember me for 30 days</Label>
             </div>
 
-            <Button type="submit" className="w-full h-12 text-base rounded-xl bg-slate-900 hover:bg-slate-800" disabled={isLoading}>
+            <Button type="submit" className="w-full h-12 text-base rounded-xl bg-slate-900 text-white hover:bg-slate-800 hover:text-white" disabled={isLoading}>
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
@@ -180,7 +200,7 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-8">
-            <Button variant="outline" className="w-full h-12 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50">
+            <Button variant="outline" className="w-full h-12 rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900">
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>

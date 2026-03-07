@@ -5,44 +5,19 @@ import { Activity, ArrowRight, Mail, Lock, User, ShieldCheck } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { authAPI, tokenManager } from '@/lib/api';
+import { GooglyEyes } from '@/components/GooglyEyes';
 
 export default function SignupPage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: ''
-  });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.id]: e.target.value
-    });
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await authAPI.register(formData);
-      
-      // Store token and user data
-      tokenManager.setToken(response.token);
-      tokenManager.setUser(response.user);
-      
-      // Navigate to onboarding
-      navigate('/onboarding');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
-    } finally {
+    setTimeout(() => {
       setIsLoading(false);
-    }
+      navigate('/onboarding');
+    }, 1500);
   };
 
   return (
@@ -52,19 +27,19 @@ export default function SignupPage() {
         <div className="absolute inset-0 neural-mesh opacity-20" />
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900/50 via-transparent to-slate-900/80 z-10" />
         
-        <div className="relative z-20 max-w-lg">
-          <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-xl flex items-center justify-center mb-8 border border-white/20">
-            <ShieldCheck className="w-8 h-8 text-orange-400" />
+        <div className="relative z-20 max-w-lg flex flex-col items-center text-center">
+          <div className="mb-8">
+            <GooglyEyes size={80} color="#FDFBF7" pupilColor="#2C2A25" />
           </div>
           <h2 className="text-4xl font-bold text-white mb-6 leading-tight">
             Take control of your <br />
             <span className="text-orange-400">skin health journey.</span>
           </h2>
-          <p className="text-lg text-slate-400 leading-relaxed">
+          <p className="text-lg text-slate-400 leading-relaxed max-w-md">
             Create an account to start tracking, analyzing, and improving your skin with clinical-grade AI.
           </p>
           
-          <div className="mt-12 space-y-6">
+          <div className="mt-12 space-y-6 w-full text-left bg-white/5 backdrop-blur-md p-8 rounded-3xl border border-white/10">
             {[
               "Personalized AI analysis",
               "Longitudinal progress tracking",
@@ -101,25 +76,11 @@ export default function SignupPage() {
           </div>
 
           <form onSubmit={handleSignup} className="space-y-5">
-            {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-                {error}
-              </div>
-            )}
-            
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <Input 
-                  id="name" 
-                  type="text" 
-                  placeholder="John Doe" 
-                  className="pl-10" 
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required 
-                />
+                <Input id="name" type="text" placeholder="John Doe" className="pl-10 text-slate-900" required />
               </div>
             </div>
 
@@ -127,15 +88,7 @@ export default function SignupPage() {
               <Label htmlFor="email">Email address</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="name@example.com" 
-                  className="pl-10" 
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required 
-                />
+                <Input id="email" type="email" placeholder="name@example.com" className="pl-10 text-slate-900" required />
               </div>
             </div>
             
@@ -143,15 +96,7 @@ export default function SignupPage() {
               <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <Input 
-                  id="password" 
-                  type="password" 
-                  placeholder="••••••••" 
-                  className="pl-10" 
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required 
-                />
+                <Input id="password" type="password" placeholder="••••••••" className="pl-10 text-slate-900" required />
               </div>
             </div>
 
